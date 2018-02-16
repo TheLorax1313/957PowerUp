@@ -42,6 +42,7 @@ public class MainControlSystem extends TimedRobot {
 	// Begin Arm control
 	ArmSubsystem m_arm = new ArmSubsystem(1);
 	
+	SensorSubsystem m_sensors = new SensorSubsystem();
 	
 	// Drive-train Initialization
 	WPI_TalonSRX m_r1 = new WPI_TalonSRX(0);	// Talons
@@ -77,6 +78,15 @@ public class MainControlSystem extends TimedRobot {
 		
 		// Reset encoders
 		m_encoders.reset();
+		
+		// Set Talon ramping
+		m_r1.configOpenloopRamp(0, 0);
+		m_r2.configOpenloopRamp(0, 0);
+		m_r3.configOpenloopRamp(0, 0);
+		m_l1.configOpenloopRamp(0, 0);
+		m_l2.configOpenloopRamp(0, 0);
+		m_l3.configOpenloopRamp(0, 0);
+
 	}
 
 	// Resets values to prepare for Auto
@@ -100,12 +110,24 @@ public class MainControlSystem extends TimedRobot {
 
 		// SWITCH CENTER AUTO
 		if(m_autoMode == 0) {
-
+			switch(m_autoStep) {
+			case 0:
+				
+				break;
+				
+			case 1:
+				
+				break;
+				
+			case 2:
+				
+				break;
+			}
 		}
 		
 		// SCALE LEFT AUTO
 		if(m_autoMode == 1) {
-			
+			driveStraight(0.4);
 		}
 		
 		// SCALE RIGHT AUTO
@@ -123,6 +145,10 @@ public class MainControlSystem extends TimedRobot {
 	public void disabledPeriodic() {
 		m_elevator.setLevel(0);
 	}
+	
+	public void teleopInit() {
+		m_elevator.setLevel(0);
+	}
 
 	// Code ran during the driver-operated period of the Match.
 	public void teleopPeriodic() {
@@ -130,7 +156,7 @@ public class MainControlSystem extends TimedRobot {
 		//if(m_ethernet.driveType() == 1) {
 		//	m_drive.tankDrive(-m_joystick0.getRawAxis(1), m_joystick1.getRawAxis(1));
 		//}else {
-			m_drive.arcadeDrive(-m_joystick1.getRawAxis(1), m_joystick1.getRawAxis(0));
+			m_drive.arcadeDrive(-m_joystick1.getRawAxis(1)*m_elevator.percent(), m_joystick1.getRawAxis(0)*m_elevator.percent());
 		//}
 		
 		if(m_joystick1.getRawButton(7)) {
@@ -157,10 +183,17 @@ public class MainControlSystem extends TimedRobot {
 		}else {
 			if(m_joystick1.getRawButton(4)) {
 				m_arm.grab();
+				m_elevator.setLevel(0);
 			}else {
 				m_arm.stop();
 			}
 		}
+		
+		//if(m_sensors.getDistance() > 0.8 && m_elevator.getLevel() == 0) {
+		//	m_elevator.setLevel(1);
+		//}
+		
+		
 	
 	}
 	
@@ -179,6 +212,7 @@ public class MainControlSystem extends TimedRobot {
 		m_leds.show();
 		SmartDashboard.putNumber("Angle", m_ahrs.getYaw());     
 		SmartDashboard.putNumber("Auto Step", m_autoStep);
+		SmartDashboard.putNumber("voltage", m_sensors.getDistance());
 	}
 
 	// Class to manage Talon encoder feedback
@@ -206,20 +240,32 @@ public class MainControlSystem extends TimedRobot {
 	// Method to drive using camera values
 	public void autoDrive(double speed, double deadzone, double input) {			
 		if(input < -deadzone) {
-       	 m_drive.tankDrive(0,-speed);
+       	 m_drive.tankDrive(0,speed);
         }else {
        	 if(input > deadzone) {
        		 m_drive.tankDrive(speed,0 );
        	 }else {
        		 if((input <= deadzone && input >= -deadzone) || input == -9000) {
-       			 m_drive.tankDrive(speed,-speed );
+       			 m_drive.tankDrive(speed,speed );
        		 }
        	 }
         }
 	}
 	
-	public class armControl {
+	public void driveStraight(double speed) {
+		double gyro = m_ahrs.getYaw();
+		double turn = 0;
+		if(gyro > gyro+0.5) {
+			turn = -0.1;
+		}
+		if(gyro < gyro-0.5) {
+			turn = 0.1;	
+		}
+		if(gyro >= gyro-0.5 && gyro <= gyro + 0.5) {
+			turn = 0;
+		}
 		
+		m_drive.arcadeDrive(speed, turn);
 	}
 
 }

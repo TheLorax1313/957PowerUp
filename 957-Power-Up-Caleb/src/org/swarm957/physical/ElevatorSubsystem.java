@@ -88,6 +88,17 @@ public class ElevatorSubsystem {
 		return liftLevel;
 	}
 	
+	public double percent() {
+		
+		if(liftLevel < 2) {
+			return 1;
+		}
+		if(liftLevel < 3) {
+			return 0.65;
+		}
+		return 0.5;
+	}
+	
 	public class elevatorControl implements Runnable {
 
 		public void run() {
