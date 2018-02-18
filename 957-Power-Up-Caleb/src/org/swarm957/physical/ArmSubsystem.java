@@ -20,8 +20,8 @@ public class ArmSubsystem {
 		// Set default wheel speed
 		this.speed = speed;
 		
-		// Invert the left talon
-		leftWheels.setInverted(true);
+		// Invert the right talon
+		rightWheels.setInverted(true);
 		
 		// Set current limits on both talons
 		leftWheels.configPeakCurrentLimit(10, globalTimeOut);

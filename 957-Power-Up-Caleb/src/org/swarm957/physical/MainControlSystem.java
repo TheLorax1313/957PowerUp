@@ -25,10 +25,10 @@ public class MainControlSystem extends TimedRobot {
 	DataControlSubsystem m_ethernet = new DataControlSubsystem();
 	
 	// Start Vision Tracking
-	//VisionSubsystem m_vision = new VisionSubsystem();
+	VisionSubsystem m_vision = new VisionSubsystem();
 	
 	// Begin Arduino Communication
-	NeoStrip m_leds = new NeoStrip(30);
+	//NeoStrip m_leds = new NeoStrip(30);
 	
 	// Enable Encoder tracking
 	srxEncoders m_encoders = new srxEncoders(256,2);
@@ -79,14 +79,14 @@ public class MainControlSystem extends TimedRobot {
 		// Reset encoders
 		m_encoders.reset();
 		
-		// Set Talon ramping
-		m_r1.configOpenloopRamp(0, 0);
-		m_r2.configOpenloopRamp(0, 0);
-		m_r3.configOpenloopRamp(0, 0);
-		m_l1.configOpenloopRamp(0, 0);
-		m_l2.configOpenloopRamp(0, 0);
-		m_l3.configOpenloopRamp(0, 0);
-
+		/*Set Talon ramping
+		setCurrentLimits(m_r1,13,15,50);
+		setCurrentLimits(m_r2,13,15,50);
+		setCurrentLimits(m_r3,13,15,50);
+		setCurrentLimits(m_l1,13,15,50);
+		setCurrentLimits(m_l2,13,15,50);
+		setCurrentLimits(m_l3,13,15,50);
+		*/
 	}
 
 	// Resets values to prepare for Auto
@@ -127,7 +127,7 @@ public class MainControlSystem extends TimedRobot {
 		
 		// SCALE LEFT AUTO
 		if(m_autoMode == 1) {
-			driveStraight(0.4);
+			
 		}
 		
 		// SCALE RIGHT AUTO
@@ -143,11 +143,11 @@ public class MainControlSystem extends TimedRobot {
 	}
 	
 	public void disabledPeriodic() {
-		m_elevator.setLevel(0);
+		//m_elevator.setLevel(0);
 	}
 	
 	public void teleopInit() {
-		m_elevator.setLevel(0);
+		//m_elevator.setLevel(0);
 	}
 
 	// Code ran during the driver-operated period of the Match.
@@ -156,34 +156,33 @@ public class MainControlSystem extends TimedRobot {
 		//if(m_ethernet.driveType() == 1) {
 		//	m_drive.tankDrive(-m_joystick0.getRawAxis(1), m_joystick1.getRawAxis(1));
 		//}else {
-			m_drive.arcadeDrive(-m_joystick1.getRawAxis(1)*m_elevator.percent(), m_joystick1.getRawAxis(0)*m_elevator.percent());
+			m_drive.arcadeDrive(-m_joystick0.getRawAxis(1)*m_elevator.percent(), m_joystick0.getRawAxis(2)*m_elevator.returnTurn());
 		//}
 		
-		if(m_joystick1.getRawButton(7)) {
+		if(m_joystick1.getRawButton(5)) {
 			m_elevator.setLevel(0);
 		}
-		if(m_joystick1.getRawButton(8)) {
+		if(m_joystick1.getRawButton(6)) {
 			m_elevator.setLevel(1);
 		}
-		if(m_joystick1.getRawButton(9)) {
+		if(m_joystick1.getRawButton(1)) {
 			m_elevator.setLevel(2);
 		}
-		if(m_joystick1.getRawButton(10)) {
+		if(m_joystick1.getRawButton(2)) {
 			m_elevator.setLevel(3);
 		}
-		if(m_joystick1.getRawButton(11)) {
+		if(m_joystick1.getRawButton(3)) {
 			m_elevator.setLevel(4);
 		}
-		if(m_joystick1.getRawButton(12)) {
+		if(m_joystick1.getRawButton(4)) {
 			m_elevator.setLevel(5);
 		}
 		
-		if(m_joystick1.getRawButton(3)) {
+		if(m_joystick0.getRawButton(2)) {
 			m_arm.eject();
 		}else {
-			if(m_joystick1.getRawButton(4)) {
+			if(m_joystick0.getRawButton(1)) {
 				m_arm.grab();
-				m_elevator.setLevel(0);
 			}else {
 				m_arm.stop();
 			}
@@ -200,19 +199,11 @@ public class MainControlSystem extends TimedRobot {
 	// Method for controlling LED Lights (5v) and Dashboard
 	// readings.
 	public void robotPeriodic(){
-		if(m_ethernet.alliance() == "blue") {
-			m_leds.fill(0, 0, 8);
-		}
-		if(m_ethernet.alliance() == "red") {
-			m_leds.fill(8, 0, 0);
-		}
-		if(m_ethernet.alliance() == "invalid") {
-			m_leds.fill(6, 0, 6);
-		}
-		m_leds.show();
+
 		SmartDashboard.putNumber("Angle", m_ahrs.getYaw());     
 		SmartDashboard.putNumber("Auto Step", m_autoStep);
 		SmartDashboard.putNumber("voltage", m_sensors.getDistance());
+		SmartDashboard.putBoolean("lowSwitch", m_elevator.get());
 	}
 
 	// Class to manage Talon encoder feedback
@@ -268,4 +259,10 @@ public class MainControlSystem extends TimedRobot {
 		m_drive.arcadeDrive(speed, turn);
 	}
 
+	public void setCurrentLimits(WPI_TalonSRX talon, int constantDraw, int spikeDraw, int maxSpikeTime) {
+		talon.configContinuousCurrentLimit(constantDraw, 20);
+		talon.configPeakCurrentLimit(spikeDraw, 20);
+		talon.configPeakCurrentDuration(maxSpikeTime, 20);
+		talon.enableCurrentLimit(true);
+	}
 }

@@ -21,7 +21,7 @@ public class VisionSubsystem {
 	ArrayList<MatOfPoint> contourData = new ArrayList<MatOfPoint>();
 	
 	// USB Cameras
-	UsbCamera cubeCamera = new UsbCamera("Cube Camera",0);
+	UsbCamera cubeCamera = new UsbCamera("Cube Camera",1);
 	UsbCamera driveCamera = new UsbCamera("Drive Camera",0);
 	
 	// Camera Stream Servers
@@ -47,17 +47,20 @@ public class VisionSubsystem {
 	
 	public VisionSubsystem() {
 		// Set resolutions of the cameras
-		cubeCamera.setResolution(320,240);
-		driveCamera.setResolution(320, 240);
-		
+		cubeCamera.setResolution(160,120);
+		driveCamera.setResolution(160, 120);
+		cubeCamera.setFPS(10);
+		driveCamera.setFPS(10);
+		driveServer.setSource(driveCamera);
+		cubeServer.setSource(cubeCamera);
 		// Set sink source
-		cubeSink.setSource(cubeCamera);
+		//cubeSink.setSource(cubeCamera);
 		
 		// Tell the cvStream to stream to CubeServer
-		cubeServer.setSource(cubeImageSource);
+		//cubeServer.setSource(cubeImageSource);
 		
 		// Launches a thread to process images from the cube camera
-		new Thread(new processCube()).start();
+		//new Thread(new processCube()).start();
 	}
 	
 	

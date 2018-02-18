@@ -4,24 +4,30 @@ package org.swarm957.physical;
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
+
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class ElevatorSubsystem {
 
 	// Elevator Talon
 	TalonSRX elevator = new TalonSRX(6);
+	DriverStation ds = DriverStation.getInstance();
 	
 	// Limit Switches (ROBO RIO DIO!)
 	DigitalInput lowSwitch = new DigitalInput(0);
 	DigitalInput highSwitch = new DigitalInput(1);
+	
+	Thread liftControl = new Thread(new elevatorControl());
 	
 	// Timeout for all Talon SRX functions
 	public int globalTimeOut = 20;
 	
 	// Lift Positions (Rounded):
 	// Ground, Exchange, Switch, Scale Low, Scale Medium, Scale High
-	int[] liftPositions = {30,1574,7950,19900,24236,28250};
+	int[] liftPositions = {30,1574,10000,20000,24236,28250};
 	
 	// Position Motion Magic homes towards
 	int targetPosition = 0;
@@ -31,6 +37,7 @@ public class ElevatorSubsystem {
 	
 	// Stores current lift level
 	int liftLevel = 0;
+	int currentLevel = 0;
 	
 	// Boolean to check if we have hit a limit switch and encoder
 	// position is in the direction of the limit switch
@@ -46,7 +53,6 @@ public class ElevatorSubsystem {
 		elevator.enableCurrentLimit(true);
 		
 		// Switch to PID slot 0
-		elevator.selectProfileSlot(0, globalTimeOut);
 		
 		// Configure our Versa Planetary encoder
 		elevator.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, globalTimeOut);
@@ -73,7 +79,8 @@ public class ElevatorSubsystem {
 		elevator.setSelectedSensorPosition(0, 0, globalTimeOut);
 		
 		// Begin thread controlling the lift mechanism
-		new Thread(new elevatorControl()).start();
+		liftControl.setDaemon(true);
+		liftControl.start();
 	
 	}
 	
@@ -90,19 +97,49 @@ public class ElevatorSubsystem {
 	
 	public double percent() {
 		
-		if(liftLevel < 2) {
+		if(currentLevel < 2) {
 			return 1;
 		}
-		if(liftLevel < 3) {
+		if(currentLevel < 3) {
 			return 0.65;
 		}
 		return 0.5;
+	}
+	
+	public double returnTurn() {
+		
+		if(currentLevel < 2) {
+			return 0.75;
+		}
+		if(currentLevel < 3) {
+			return 0.6;
+		}
+		return 0.5;
+	}
+	
+	
+	
+	public boolean get() {
+		return lowSwitch.get();
 	}
 	
 	public class elevatorControl implements Runnable {
 
 		public void run() {
 			while(true) {
+				
+				if(ds.isDisabled()) {
+					while((ds.isDisabled()) || (!lowSwitch.get())||(!lowSwitch.get() && ds.isEnabled())) {
+						elevator.set(ControlMode.PercentOutput, 0);
+						//SmartDashboard.putBoolean("Able to move", false);
+					}
+					try {
+						Thread.sleep(1);
+					} catch (Exception e) {}
+					targetPosition = liftPositions[0];
+					liftLevel = 0;
+				}
+				SmartDashboard.putBoolean("Able to move", true);
 				// Gets the current encoder position
 				currentPos = elevator.getSelectedSensorPosition(0);
 
@@ -130,8 +167,37 @@ public class ElevatorSubsystem {
 				// Reports the position of the elevator in encoder counts
 				SmartDashboard.putNumber("Elevator: ",elevator.getSelectedSensorPosition(0));
 				SmartDashboard.putNumber("Amp Usage", elevator.getOutputCurrent());
+
+				if(currentPos <= 1300) {
+					currentLevel = 0;
+				}
+				if(currentPos > 1300 && currentPos <= 1800) {
+					currentLevel = 1;
+				}
+				if(currentPos > 1800 && currentPos <= 10500) {
+					currentLevel = 2;
+				}
+				if(currentPos > 10500 && currentPos <= 20500) {
+					currentLevel = 3;
+				}
+				if(currentPos > 20500 && currentPos <= 26000) {
+					currentLevel = 4;
+				}
+				if(currentPos > 26000 && currentPos <= 26000) {
+					currentLevel = 5;
+				}
+				if(currentPos > 20500 && currentPos <= 26000) {
+					currentLevel = 6;
+				}
+				
+				
+				try {
+					Thread.sleep(10);
+				} catch (Exception e) {}
 			}
 		}
 	}
+	
+	
 }
 

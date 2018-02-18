@@ -98,8 +98,8 @@ public class NeoStrip {
 				}
 			}
 			
-			System.out.println(
-					"Client aquired and DOS established. Starting NeoPixel control.");
+			//System.out.println(
+				//	"Client aquired and DOS established. Starting NeoPixel control.");
 		}
 		
 		// Writes to the Arduino and closes the socket once done
