@@ -138,6 +138,7 @@ public class ElevatorSubsystem {
 					} catch (Exception e) {}
 					targetPosition = liftPositions[0];
 					liftLevel = 0;
+					elevator.setSelectedSensorPosition(0, 0, 20);
 				}
 				SmartDashboard.putBoolean("Able to move", true);
 				// Gets the current encoder position

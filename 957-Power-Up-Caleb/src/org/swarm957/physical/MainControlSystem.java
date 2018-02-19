@@ -273,109 +273,260 @@ public class MainControlSystem extends TimedRobot {
 		
 		// SCALE right AUTO
 		if(m_autoMode == 2) {
-			switch(m_autoStep) {
-			case 0:
+			if(m_gameData[1] == "R".toCharArray()[0]) {
+				switch(m_autoStep) {
+				case 0:
+					
+					
+					if(m_encoders.getDistance() > 230) {
+						speed = 0.5;
+					}else {
+						speed = 0.8;
+					}
+					
+					if((m_encoders.getDistance() > 292)) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 1;
+						m_encoders.reset();
+						autoCount = 0;
+					}else {
+						driveStraight(speed,0);
+					}
+					// 304 inches
+					
+					if( m_encoders.getDistance() > 384) {
+						m_drive.tankDrive(0, 0);
+					}
+					
+					break;
+					
+				case 1:
+		
+					if(m_ahrs.getYaw() < -80) {
+						speed = 0.7;
+					}else {
+						speed = 0.7;
+					}
+					
+					if(m_ahrs.getYaw() < -88) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 2;
+						m_encoders.reset();
+						autoCount = 0;
+					}
+					m_drive.tankDrive(-speed,speed);
+					break;
 				
-				if(m_encoders.getDistance() > 230) {
-					speed = 0.5;
-				}else {
-					speed = 0.8;
+				case 2:
+					autoCount++;
+					m_elevator.setLevel(1);
+					driveStraight(-0.55, -90);
+					if(RPM < 2 && autoCount > 25) {
+						m_autoStep = 3;
+						autoCount = 0;
+					}
+					
+					break;
+				case 3:
+					autoCount++;
+					m_elevator.setLevel(5);
+					if(autoCount > 100) {
+						m_autoStep = 4;
+						m_encoders.reset();
+					}
+					break;
+					
+				case 4:
+					driveStraight(0.5, -90);
+					if(m_encoders.getDistance() > 24) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 5;
+						autoCount = 0;
+					}
+					break;
+				case 5:
+					m_arm.eject();
+					autoCount++;
+					
+					if(autoCount > 50) {
+						m_arm.stop();
+						m_autoStep = 6;
+						autoCount = 0;
+					}
+					break;
+					
+				case 6:
+					driveStraight(-0.5, -90);
+					autoCount++;
+					
+					if(autoCount > 100 || (RPM < 2 && autoCount > 25)) {
+						m_drive.tankDrive(0,0);
+						m_autoStep = 7;
+						autoCount = 0;
+					}
+					break;
+					
+				case 7:
+					
+					m_elevator.setLevel(0);
+					break;
+				case 8:
+					break;
 				}
-				
-				if((m_ahrs.getPitch() > 1.5 && m_encoders.getDistance() > 304)) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 1;
-					m_encoders.reset();
-					autoCount = 0;
-				}else {
-					driveStraight(speed,0);
+			}else {
+				switch(m_autoStep) {
+				case 0:
+					
+					if(m_encoders.getDistance() > 70) {
+						speed = 0.4;
+					}else {
+						speed = 0.7;
+					}
+					
+					
+					if(m_encoders.getDistance() > 101) {
+						m_drive.tankDrive(0, 0);
+						//m_autoStep = 1;
+					}else {
+						driveStraight(speed,0);
+					}
+					
+					break;
+					
+				case 1:
+					
+					break;
 				}
-				// 304 inches
-				
-				if( m_encoders.getDistance() > 384) {
-					m_drive.tankDrive(0, 0);
-				}
-				
-				break;
-				
-			case 1:
-	
-				if(m_ahrs.getYaw() < -80) {
-					speed = 0.7;
-				}else {
-					speed = 0.7;
-				}
-				
-				if(m_ahrs.getYaw() < -88) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 2;
-					m_encoders.reset();
-					autoCount = 0;
-				}
-				m_drive.tankDrive(-speed,speed);
-				break;
-			
-			case 2:
-				autoCount++;
-				m_elevator.setLevel(1);
-				driveStraight(-0.55, -90);
-				if(RPM < 2 && autoCount > 25) {
-					m_autoStep = 3;
-					autoCount = 0;
-				}
-				
-				break;
-			case 3:
-				autoCount++;
-				m_elevator.setLevel(5);
-				if(autoCount > 100) {
-					m_autoStep = 4;
-					m_encoders.reset();
-				}
-				break;
-				
-			case 4:
-				driveStraight(0.5, -90);
-				if(m_encoders.getDistance() > 24) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 5;
-					autoCount = 0;
-				}
-				break;
-			case 5:
-				m_arm.eject();
-				autoCount++;
-				
-				if(autoCount > 50) {
-					m_arm.stop();
-					m_autoStep = 6;
-					autoCount = 0;
-				}
-				break;
-				
-			case 6:
-				driveStraight(-0.5, -90);
-				autoCount++;
-				
-				if(autoCount > 100 || (RPM < 2 && autoCount > 25)) {
-					m_drive.tankDrive(0,0);
-					m_autoStep = 7;
-					autoCount = 0;
-				}
-				break;
-				
-			case 7:
-				
-				m_elevator.setLevel(0);
-				break;
-			}
-			
-			
+			}	
 		}
 		
 		// SCALE Left AUTO
 		if(m_autoMode == 1) {
-			
+			if(m_gameData[1] == "L".toCharArray()[0]) {
+				switch(m_autoStep) {
+				case 0:
+					
+					
+					if(m_encoders.getDistance() > 230) {
+						speed = 0.5;
+					}else {
+						speed = 0.8;
+					}
+					
+					if((m_encoders.getDistance() > 292)) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 1;
+						m_encoders.reset();
+						autoCount = 0;
+					}else {
+						driveStraight(speed,0);
+					}
+					// 304 inches
+					
+					if( m_encoders.getDistance() > 384) {
+						m_drive.tankDrive(0, 0);
+					}
+					
+					break;
+					
+				case 1:
+		
+					if(m_ahrs.getYaw() > 80) {
+						speed = 0.7;
+					}else {
+						speed = 0.7;
+					}
+					
+					if(m_ahrs.getYaw() > 88) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 2;
+						m_encoders.reset();
+						autoCount = 0;
+					}
+					m_drive.tankDrive(speed,-speed);
+					break;
+				
+				case 2:
+					autoCount++;
+					m_elevator.setLevel(1);
+					driveStraight(-0.55, -90);
+					if(RPM < 2 && autoCount > 25) {
+						m_autoStep = 3;
+						autoCount = 0;
+					}
+					
+					break;
+				case 3:
+					autoCount++;
+					m_elevator.setLevel(5);
+					if(autoCount > 100) {
+						m_autoStep = 4;
+						m_encoders.reset();
+					}
+					break;
+					
+				case 4:
+					driveStraight(0.5, -90);
+					if(m_encoders.getDistance() > 24) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 5;
+						autoCount = 0;
+					}
+					break;
+				case 5:
+					m_arm.eject();
+					autoCount++;
+					
+					if(autoCount > 50) {
+						m_arm.stop();
+						m_autoStep = 6;
+						autoCount = 0;
+					}
+					break;
+					
+				case 6:
+					driveStraight(-0.5, -90);
+					autoCount++;
+					
+					if(autoCount > 100 || (RPM < 2 && autoCount > 25)) {
+						m_drive.tankDrive(0,0);
+						m_autoStep = 7;
+						autoCount = 0;
+					}
+					break;
+					
+				case 7:
+					
+					m_elevator.setLevel(0);
+					break;
+				case 8:
+					break;
+				}
+			}else {
+				switch(m_autoStep) {
+				case 0:
+					
+					if(m_encoders.getDistance() > 70) {
+						speed = 0.4;
+					}else {
+						speed = 0.7;
+					}
+					
+					
+					if(m_encoders.getDistance() > 101) {
+						m_drive.tankDrive(0, 0);
+						//m_autoStep = 1;
+					}else {
+						driveStraight(speed,0);
+					}
+					
+					break;
+					
+				case 1:
+					
+					break;
+				}
+			}
 		}
 
 		// CROSS AUTOLINE AUTO

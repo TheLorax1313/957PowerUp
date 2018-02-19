@@ -55,6 +55,9 @@ public class DataControlSubsystem {
 	}
 	
 	public char[] switchLocation(){
+		if(ds.getGameSpecificMessage() == "") {
+			return "NNN".toCharArray();
+		}
 		return (ds.getGameSpecificMessage()).toCharArray();
 	}
 	
