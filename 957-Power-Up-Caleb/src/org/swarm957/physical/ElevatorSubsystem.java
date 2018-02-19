@@ -131,7 +131,7 @@ public class ElevatorSubsystem {
 				if(ds.isDisabled()) {
 					while((ds.isDisabled()) || (!lowSwitch.get())||(!lowSwitch.get() && ds.isEnabled())) {
 						elevator.set(ControlMode.PercentOutput, 0);
-						//SmartDashboard.putBoolean("Able to move", false);
+						SmartDashboard.putBoolean("Able to move", false);
 					}
 					try {
 						Thread.sleep(1);

@@ -30,16 +30,11 @@ public class DataControlSubsystem {
 	
 	public DataControlSubsystem(){
 		// Initalizes auto modes
-		autoModes.setName("AUTO");
-		driveModes.setName("DRIVE");
 		autoModes.addDefault("Switch: Center Start", 0);
-		autoModes.addDefault("Scale: Left Start", 1);
-		autoModes.addDefault("Scale: Right Start", 2);
-		autoModes.addDefault("Cross Auto Line", 3);
+		autoModes.addObject("Scale: Left Start", 1);
+		autoModes.addObject("Scale: Right Start", 2);
+		autoModes.addObject("Cross Auto Line", 3);
 		SmartDashboard.putData(autoModes);
-		driveModes.addDefault("Arcade", 1);
-		driveModes.addDefault("Tank", 2);
-		SmartDashboard.putData(driveModes);
 	}
 	
 	public String alliance(){
