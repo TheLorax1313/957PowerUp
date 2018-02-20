@@ -149,13 +149,13 @@ public class MainControlSystem extends TimedRobot {
 			case 2:
 				
 				if(m_gameData[0] == "L".toCharArray()[0]) {
-					if(m_ahrs.getYaw() < -25) {
+					if(m_ahrs.getYaw() < -35) {
 						speed = 0.55;
 					}else {
 						speed = 0.65;
 					}
 					
-					if(m_ahrs.getYaw() < -33) {
+					if(m_ahrs.getYaw() < -43) {
 						m_drive.tankDrive(0, 0);
 						m_autoStep = 3;
 						m_encoders.reset();
@@ -164,13 +164,13 @@ public class MainControlSystem extends TimedRobot {
 				}
 				
 				if(m_gameData[0] == "R".toCharArray()[0]) {
-					if(m_ahrs.getYaw() > 25) {
+					if(m_ahrs.getYaw() > 35) {
 						speed = 0.4;
 					}else {
 						speed = 0.7;
 					}
 					
-					if(m_ahrs.getYaw() > 33) {
+					if(m_ahrs.getYaw() > 43) {
 						m_drive.tankDrive(0, 0);
 						m_autoStep = 3;
 						m_encoders.reset();
@@ -180,18 +180,21 @@ public class MainControlSystem extends TimedRobot {
 				
 				break;
 			case 3:
-				if(m_encoders.getDistance() > 50) {
+				if(m_encoders.getDistance() > 40) {
 					speed = 0.4;
 				}else {
 					speed = 0.6;
 				}
 				
 				
-				if(m_encoders.getDistance() > 65) {
+				if(m_encoders.getDistance() > 55) {
 					m_drive.tankDrive(0, 0);
 					m_autoStep = 4;
 				}else {
-					driveStraight(speed,-33);
+					if(m_gameData[0] == "R".toCharArray()[0])
+					driveStraight(speed,45);
+					if(m_gameData[0] == "L".toCharArray()[0])
+						driveStraight(speed,-45);
 				}
 				break;
 				
@@ -223,6 +226,7 @@ public class MainControlSystem extends TimedRobot {
 						m_drive.tankDrive(0, 0);
 						m_autoStep = 5;
 						m_encoders.reset();
+						autoCount = 0;
 					}
 					m_drive.tankDrive(-speed,speed);
 				}
@@ -231,8 +235,9 @@ public class MainControlSystem extends TimedRobot {
 				
 			case 5:
 				m_elevator.setLevel(2);
-				autoDrive(0.55,2,m_ethernet.xFinal());
-				if(m_ethernet.targetArea() > 4.1 || m_encoders.getDistance() > 96) {
+				autoCount++;
+				autoDrive(0.6,2,m_ethernet.xFinal());
+				if(m_ethernet.targetArea() > 4.1 || (RPM < 2 && autoCount > 25)) {
 					m_drive.tankDrive(0, 0);
 					m_autoStep = 6;
 					autoCount = 0;
@@ -554,6 +559,172 @@ public class MainControlSystem extends TimedRobot {
 				
 				break;
 			}
+		}
+		
+		// SWITCH LEFT OR CROSS THE LINE
+		if(m_autoMode == 4) {
+			switch(m_autoStep) {
+			
+			case 0:
+				m_elevator.setLevel(1);
+				if(m_encoders.getDistance() > 125) {
+					speed = 0.45;
+				}else {
+					speed = 0.7;
+				}
+				
+				
+				if(m_encoders.getDistance() > 155) {
+					m_drive.tankDrive(0, 0);
+					if(m_gameData[0] == "L".toCharArray()[0]) {
+						m_autoStep = 1;
+					}
+					
+				}else {
+					driveStraight(speed,0);
+				}
+				break;
+				
+			case 1:
+				if(m_ahrs.getYaw() > 80) {
+					speed = 0.45;
+				}else {
+					speed = 0.7;
+				}
+				m_elevator.setLevel(2);
+				if(m_ahrs.getYaw() > 88) {
+					m_drive.tankDrive(0, 0);
+					m_autoStep = 2;
+					m_encoders.reset();
+					autoCount = 0;
+				}
+				m_drive.tankDrive(speed,-speed);
+				break;
+				
+			case 2:
+				
+				autoCount++;
+				
+				if(autoCount > 25 && RPM < 2) {
+					m_drive.tankDrive(0, 0);
+					m_autoStep = 3;
+					m_encoders.reset();
+					autoCount = 0;
+				}else {
+					driveStraight(0.6,90);
+				}
+				break;
+				
+			case 3:
+				m_arm.eject();
+				autoCount++;
+				
+				if(autoCount > 50) {
+					m_arm.stop();
+					m_autoStep = 4;
+					autoCount = 0;
+				}
+				break;
+				
+			case 4:
+				driveStraight(-0.6, 90);
+				autoCount++;
+				
+				if(autoCount > 100 || (RPM < 2 && autoCount > 25)) {
+					m_drive.tankDrive(0,0);
+					m_autoStep = 5;
+					autoCount = 0;
+				}
+				break;
+				
+			case 5:
+				m_elevator.setLevel(0);
+				break;
+			}
+		}
+		
+		// SWITCH RIGHT OR CROSS THE LINE
+		if(m_autoMode == 5) {
+			
+			switch(m_autoStep) {
+			
+			case 0:
+				m_elevator.setLevel(1);
+				if(m_encoders.getDistance() > 125) {
+					speed = 0.45;
+				}else {
+					speed = 0.7;
+				}
+				
+				
+				if(m_encoders.getDistance() > 155) {
+					m_drive.tankDrive(0, 0);
+					if(m_gameData[0] == "R".toCharArray()[0]) {
+						m_autoStep = 1;
+					}
+					
+				}else {
+					driveStraight(speed,0);
+				}
+				break;
+				
+			case 1:
+				if(m_ahrs.getYaw() < -80) {
+					speed = 0.45;
+				}else {
+					speed = 0.7;
+				}
+				m_elevator.setLevel(2);
+				if(m_ahrs.getYaw() < -88) {
+					m_drive.tankDrive(0, 0);
+					m_autoStep = 2;
+					m_encoders.reset();
+					autoCount = 0;
+				}
+				m_drive.tankDrive(-speed,speed);
+				break;
+				
+			case 2:
+				
+				autoCount++;
+				
+				if(autoCount > 25 && RPM < 2) {
+					m_drive.tankDrive(0, 0);
+					m_autoStep = 3;
+					m_encoders.reset();
+					autoCount = 0;
+				}else {
+					driveStraight(0.6,90);
+				}
+				break;
+				
+			case 3:
+				m_arm.eject();
+				autoCount++;
+				
+				if(autoCount > 50) {
+					m_arm.stop();
+					m_autoStep = 4;
+					autoCount = 0;
+				}
+				break;
+				
+			case 4:
+				driveStraight(-0.6, 90);
+				autoCount++;
+				
+				if(autoCount > 100 || (RPM < 2 && autoCount > 25)) {
+					m_drive.tankDrive(0,0);
+					m_autoStep = 5;
+					autoCount = 0;
+				}
+				break;
+				
+			case 5:
+				m_elevator.setLevel(0);
+				break;
+			}
+			
 		}
 		
 	}

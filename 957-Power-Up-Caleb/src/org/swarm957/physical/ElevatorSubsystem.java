@@ -27,7 +27,7 @@ public class ElevatorSubsystem {
 	
 	// Lift Positions (Rounded):
 	// Ground, Exchange, Switch, Scale Low, Scale Medium, Scale High
-	int[] liftPositions = {30,1574,10000,20000,24236,28250};
+	int[] liftPositions = {30,1724,10400,20000,24236,28250};
 	
 	// Position Motion Magic homes towards
 	int targetPosition = 0;

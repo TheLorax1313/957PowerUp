@@ -34,6 +34,8 @@ public class DataControlSubsystem {
 		autoModes.addObject("Scale: Left Start", 1);
 		autoModes.addObject("Scale: Right Start", 2);
 		autoModes.addObject("Cross Auto Line", 3);
+		autoModes.addObject("Switch Left", 4);
+		autoModes.addObject("Switch Right", 5);
 		SmartDashboard.putData(autoModes);
 	}
 	
