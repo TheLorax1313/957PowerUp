@@ -31,11 +31,13 @@ public class DataControlSubsystem {
 	public DataControlSubsystem(){
 		// Initalizes auto modes
 		autoModes.addDefault("Switch: Center Start", 0);
-		autoModes.addObject("Scale: Left Start", 1);
-		autoModes.addObject("Scale: Right Start", 2);
+		autoModes.addObject("Scale Slam: Left Start", 1);
+		autoModes.addObject("Scale Slam: Right Start", 2);
 		autoModes.addObject("Cross Auto Line", 3);
 		autoModes.addObject("Switch Left", 4);
 		autoModes.addObject("Switch Right", 5);
+		autoModes.addObject("Scale Cross: Left Start", 6);
+		autoModes.addObject("Scale Cross: Right Start", 7);
 		SmartDashboard.putData(autoModes);
 	}
 	

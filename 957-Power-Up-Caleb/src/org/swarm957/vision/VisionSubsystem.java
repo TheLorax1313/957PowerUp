@@ -14,6 +14,7 @@ import edu.wpi.cscore.CvSource;
 import edu.wpi.cscore.MjpegServer;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoMode;
+import edu.wpi.first.wpilibj.Joystick;
 
 public class VisionSubsystem {
 
@@ -21,12 +22,14 @@ public class VisionSubsystem {
 	ArrayList<MatOfPoint> contourData = new ArrayList<MatOfPoint>();
 	
 	// USB Cameras
-	UsbCamera cubeCamera = new UsbCamera("Cube Camera",1);
-	UsbCamera driveCamera = new UsbCamera("Drive Camera",0);
+	UsbCamera cubeCamera = new UsbCamera("Cube Camera",0);
+	UsbCamera driveCamera = new UsbCamera("Drive Camera",1);
+	UsbCamera scaleCamera = new UsbCamera("scaleCamera", 2);
 	
 	// Camera Stream Servers
-	MjpegServer cubeServer = new MjpegServer("Cube Camera Server",1180);
-	MjpegServer driveServer = new MjpegServer("Drive Camera Server",1181);
+	MjpegServer driveServer = new MjpegServer("Cube Camera Server",1180);
+	MjpegServer secondServer = new MjpegServer("Drive Camera Server",1181);
+
 	
 	// CV Sink+Source
 	CvSink cubeSink = new CvSink("Cube Image Grabber");
@@ -39,6 +42,8 @@ public class VisionSubsystem {
 	// Class to process MAT image
 	CubeTracking ct = new CubeTracking();
 	
+	double hat = -1;
+	
 	// Variables for holding vision processing data
 	double rectCenterX = 0;
 	double rectCenterY = 0;
@@ -49,10 +54,10 @@ public class VisionSubsystem {
 		// Set resolutions of the cameras
 		cubeCamera.setResolution(160,120);
 		driveCamera.setResolution(160, 120);
-		cubeCamera.setFPS(10);
-		driveCamera.setFPS(10);
+		cubeCamera.setFPS(30);
+		driveCamera.setFPS(30);
 		driveServer.setSource(driveCamera);
-		cubeServer.setSource(cubeCamera);
+		secondServer.setSource(cubeCamera);
 		// Set sink source
 		//cubeSink.setSource(cubeCamera);
 		
@@ -61,6 +66,18 @@ public class VisionSubsystem {
 		
 		// Launches a thread to process images from the cube camera
 		//new Thread(new processCube()).start();
+		
+		// Launches camera switching thread
+	}
+	
+	public void sendHat(Joystick joy) {
+		hat = joy.getPOV(0);
+		if(hat == 90) {
+			secondServer.setSource(cubeCamera);
+		}
+		if(hat == 270) {
+			secondServer.setSource(scaleCamera);
+		}
 	}
 	
 	
