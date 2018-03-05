@@ -28,7 +28,7 @@ public class MainControlSystem extends TimedRobot {
 	VisionSubsystem m_vision = new VisionSubsystem();
 	
 	// Begin Arduino Communication
-	//NeoStrip m_leds = new NeoStrip(30);
+	UDP_NeoStrip neo = new UDP_NeoStrip(30, "Side Strips", new byte[] {10,9,57,6});
 	
 	// Enable Encoder tracking
 	srxEncoders m_encoders = new srxEncoders(256,2);
@@ -47,6 +47,9 @@ public class MainControlSystem extends TimedRobot {
 	SensorSubsystem m_sensors = new SensorSubsystem();
 	
 	Thread m_rpm = new Thread(new calculateRPM());
+	
+	int[] powerUp = {1,0,1,0,2,1,2,1,3,2,3,2,4,3,4,3,5,4,5,4,6,5,6,5,7,6,7,6,8};
+	double powerUpFrame = 0; 
 	
 	// Drive-train Initialization
 	WPI_TalonSRX m_r1 = new WPI_TalonSRX(0);	// Talons
@@ -73,17 +76,21 @@ public class MainControlSystem extends TimedRobot {
 	// Character array to hold switch/scale locations
 	char[] m_gameData = new char[3];
 	
+	// Climbing talon
+	WPI_TalonSRX m_climb = new WPI_TalonSRX(9);
+	double climbValue = 0;
+	
 	// Ran once on robot initalization
 	public void robotInit() {
 		
 		
 		// Configure the right drivetrain encoder
-		m_r2.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 50);
-		m_r2.setSensorPhase(false);
+		m_r1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 50);
+		m_r1.setSensorPhase(false);
 		
 		// Configure the left drivetrain encoder
-		m_l1.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 50);
-		m_l1.setSensorPhase(true);
+		m_l3.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, 0, 50);
+		m_l3.setSensorPhase(true);
 		
 		// Reset encoders
 		m_encoders.reset();
@@ -380,26 +387,81 @@ public class MainControlSystem extends TimedRobot {
 				}
 			}else {
 				switch(m_autoStep) {
+				
 				case 0:
-					
-					if(m_encoders.getDistance() > 70) {
-						speed = 0.4;
+					m_elevator.setLevel(1);
+					if(m_encoders.getDistance() > 125) {
+						speed = 0.45;
 					}else {
-						speed = 0.7;
+						speed = 0.6;
 					}
 					
 					
-					if(m_encoders.getDistance() > 101) {
+					if(m_encoders.getDistance() > 155) {
 						m_drive.tankDrive(0, 0);
-						//m_autoStep = 1;
+						if(m_gameData[0] == "R".toCharArray()[0]) {
+							m_autoStep = 1;
+						}
+						
 					}else {
 						driveStraight(speed,0);
 					}
-					
 					break;
 					
 				case 1:
+					if(m_ahrs.getYaw() < -80) {
+						speed = 0.45;
+					}else {
+						speed = 0.6;
+					}
+					m_elevator.setLevel(2);
+					if(m_ahrs.getYaw() < -88) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 2;
+						m_encoders.reset();
+						autoCount = 0;
+					}
+					m_drive.tankDrive(-speed,speed);
+					break;
 					
+				case 2:
+					
+					autoCount++;
+					
+					if(autoCount > 25 && RPM < 2) {
+						m_drive.tankDrive(0, 0);
+						m_autoStep = 3;
+						m_encoders.reset();
+						autoCount = 0;
+					}else {
+						driveStraight(0.6,90);
+					}
+					break;
+					
+				case 3:
+					m_arm.eject();
+					autoCount++;
+					
+					if(autoCount > 50) {
+						m_arm.stop();
+						m_autoStep = 4;
+						autoCount = 0;
+					}
+					break;
+					
+				case 4:
+					driveStraight(-0.6, 90);
+					autoCount++;
+					
+					if(autoCount > 100 || (RPM < 2 && autoCount > 25)) {
+						m_drive.tankDrive(0,0);
+						m_autoStep = 5;
+						autoCount = 0;
+					}
+					break;
+					
+				case 5:
+					m_elevator.setLevel(0);
 					break;
 				}
 			}	
@@ -412,13 +474,13 @@ public class MainControlSystem extends TimedRobot {
 				case 0:
 					
 					
-					if(m_encoders.getDistance() > 230) {
-						speed = 0.5;
+					if(m_encoders.getDistance() > 170) {
+						speed = 0.6;
 					}else {
 						speed = 0.8;
 					}
 					
-					if((m_encoders.getDistance() > 292)) {
+					if((m_encoders.getDistance() > 285)) {
 						m_drive.tankDrive(0, 0);
 						m_autoStep = 1;
 						m_encoders.reset();
@@ -710,7 +772,7 @@ public class MainControlSystem extends TimedRobot {
 				if(m_encoders.getDistance() > 125) {
 					speed = 0.45;
 				}else {
-					speed = 0.7;
+					speed = 0.6;
 				}
 				
 				
@@ -729,7 +791,7 @@ public class MainControlSystem extends TimedRobot {
 				if(m_ahrs.getYaw() < -80) {
 					speed = 0.45;
 				}else {
-					speed = 0.7;
+					speed = 0.6;
 				}
 				m_elevator.setLevel(2);
 				if(m_ahrs.getYaw() < -88) {
@@ -791,7 +853,7 @@ public class MainControlSystem extends TimedRobot {
 				switch(m_autoStep) {
 				// Drive forward
 				case 0:
-					
+					m_elevator.setLevel(1);
 					if(m_encoders.getDistance() > 172) {
 						speed = 0.45;
 					}else {
@@ -811,13 +873,13 @@ public class MainControlSystem extends TimedRobot {
 					
 				case 1:
 					// turn and raise lift
-					if(m_ahrs.getYaw() > 16) {
-						speed = 0.45;
-					}else {
+					if(m_ahrs.getYaw() > 25) {
 						speed = 0.5;
+					}else {
+						speed = 0.55;
 					}
 					m_elevator.setLevel(5);
-					if(m_ahrs.getYaw() > 22) {
+					if(m_ahrs.getYaw() > 30) {
 						m_drive.tankDrive(0, 0);
 						m_autoStep = 2;
 						m_encoders.reset();
@@ -829,7 +891,7 @@ public class MainControlSystem extends TimedRobot {
 				// Drive to scale
 				case 2:
 					driveStraight(0.5,24);
-					if((m_encoders.getDistance() > 46)) {
+					if((m_encoders.getDistance() > 43)) {
 						m_drive.tankDrive(0, 0);
 						m_autoStep = 3;
 						m_encoders.reset();
@@ -862,122 +924,201 @@ public class MainControlSystem extends TimedRobot {
 				break;
 				}	
 			}
+		}
+				// Right Cross Scale
+				if(m_autoMode == 7) {
+					// Our Side
+					if(m_gameData[1] == "R".toCharArray()[0]) {
+						switch(m_autoStep) {
+						// Drive forward
+						case 0:
+							
+							if(m_encoders.getDistance() > 172) {
+								speed = 0.45;
+							}else {
+								speed = 0.6;
+							}
+							// Aiming for 226
+							if((m_encoders.getDistance() > 220)) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 1;
+								m_encoders.reset();
+								autoCount = 0;
+							}else {
+								driveStraight(speed,0);
+							}
+							
+							break;
+							
+						case 1:
+							// turn and raise lift
+							if(m_ahrs.getYaw() < -20) {
+								speed = 0.45;
+							}else {
+								speed = 0.5;
+							}
+							m_elevator.setLevel(5);
+							if(m_ahrs.getYaw() < -30) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 2;
+								m_encoders.reset();
+								autoCount = 0;
+							}
+							m_drive.tankDrive(-speed,speed);
+							
+							break;
+						// Drive to scale
+						case 2:
+							driveStraight(0.5,24);
+							if((m_encoders.getDistance() > 46)) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 3;
+								m_encoders.reset();
+								autoCount = 0;
+							}
+							break;
+						// Shoot	
+						case 3:
+							m_arm.eject();
+							autoCount++;
+							
+							if(autoCount > 50) {
+								m_arm.stop();
+								m_autoStep = 4;
+								autoCount = 0;
+							}
+							break;
+						// Back Up
+						case 4:
+
+							autoCount++;
+							driveStraight(-0.5, 0);
+							if(autoCount > 75) {
+								m_elevator.setLevel(0);
+								m_autoStep = 5;
+								autoCount = 0;
+							}
+							break;
+						case 5:
+						break;
+						}
+					}
+				
+					// Opposite side (Cross)
+					if(m_gameData[1] == "L".toCharArray()[0]) {
+						switch(m_autoStep) {
+						case 0:
+							m_elevator.setLevel(1);
+							if(m_encoders.getDistance() > 160) {
+								speed = 0.55;
+							}else {
+								speed = 0.7;
+							}
+							// Aiming for 226-20
+							if((m_encoders.getDistance() > 204)) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 1;
+								m_encoders.reset();
+								autoCount = 0;
+							}else {
+								driveStraight(speed,0);
+							}
+							
+							break;
+							
+						case 1:
+							// turn
+							if(m_ahrs.getYaw() < -70) {
+								speed = 0.55;
+							}else {
+								speed = .6;
+							}
 			
+							if(m_ahrs.getYaw() < -75) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 2;
+								m_encoders.reset();
+								autoCount = 0;
+							}
+							m_drive.tankDrive(-speed,speed);
+							
+							break;
+							// Drive over the bump and over to the other side of the Scale
+						case 2:
+							if(m_encoders.getDistance() > 200) {
+								speed = 0.55;
+							}else {
+								speed = 0.7;
+							}
+							// Aiming for 226-20
+							if((m_encoders.getDistance() > 230)) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 3;
+								m_encoders.reset();
+								autoCount = 0;
+							}else {
+								driveStraight(speed,-90);
+							}
+							break;
+							// Turn forward
+						case 3:
+							
+							// turn
+							if(m_ahrs.getYaw() > 16) {
+								speed = 0.55;
+							}else {
+								speed = 0.60;
+							}
+							m_elevator.setLevel(5);
 			
-			// Opposite side (Cross)
-			if(m_gameData[1] == "R".toCharArray()[0]) {
-			switch(m_autoStep) {
-			case 0:
-				
-				if(m_encoders.getDistance() > 160) {
-					speed = 0.5;
-				}else {
-					speed = 0.7;
-				}
-				// Aiming for 226-20
-				if((m_encoders.getDistance() > 208)) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 1;
-					m_encoders.reset();
-					autoCount = 0;
-				}else {
-					driveStraight(speed,0);
-				}
-				
-				break;
-				
-			case 1:
-				// turn
-				if(m_ahrs.getYaw() > 80) {
-					speed = 0.45;
-				}else {
-					speed = 0.5;
-				}
-
-				if(m_ahrs.getYaw() > 88) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 2;
-					m_encoders.reset();
-					autoCount = 0;
-				}
-				m_drive.tankDrive(speed,-speed);
-				
-				break;
-				// Drive over the bump and over to the other side of the Scale
-			case 2:
-				if(m_encoders.getDistance() > 180) {
-					speed = 0.45;
-				}else {
-					speed = 0.6;
-				}
-				// Aiming for 226-20
-				if((m_encoders.getDistance() > 218)) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 3;
-					m_encoders.reset();
-					autoCount = 0;
-				}else {
-					driveStraight(speed,90);
-				}
-				break;
-				// Turn forward
-			case 3:
-				
-				// turn
-				if(m_ahrs.getYaw() < -14) {
-					speed = 0.45;
-				}else {
-					speed = 0.5;
-				}
-				m_elevator.setLevel(5);
-
-				if(m_ahrs.getYaw() < -22) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 4;
-					m_encoders.reset();
-					autoCount = 0;
-				}
-				m_drive.tankDrive(-speed,speed);
-				
-				break;
-				// Drive to scale
-			case 4:
-				driveStraight(0.5,-24);
-				if((m_encoders.getDistance() > 46)) {
-					m_drive.tankDrive(0, 0);
-					m_autoStep = 5;
-					m_encoders.reset();
-					autoCount = 0;
-				}
-				break;
-			// Shoot	
-			case 5:
-				m_arm.eject();
-				autoCount++;
-				
-				if(autoCount > 50) {
-					m_arm.stop();
-					m_autoStep = 6;
-					autoCount = 0;
-				}
-				break;
-			// Back Up
-			case 6:
-
-				autoCount++;
-				driveStraight(-0.5, 0);
-				if(autoCount > 75) {
-					m_elevator.setLevel(0);
-					m_autoStep = 7;
-					autoCount = 0;
-				}
-				break;
-			case 7:
-			break;
-			}
+							if(m_ahrs.getYaw() > 20) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 4;
+								m_encoders.reset();
+								autoCount = 0;
+							}
+							m_drive.tankDrive(speed,-speed);
+							
+							break;
+							// Drive to scale
+						case 4:
+							driveStraight(0.5,30);
+							if((m_encoders.getDistance() > 56)) {
+								m_drive.tankDrive(0, 0);
+								m_autoStep = 5;
+								m_encoders.reset();
+								autoCount = 0;
+							}
+							break;
+						// Shoot	
+						case 5:
+							m_arm.eject();
+							autoCount++;
+							
+							if(autoCount > 50) {
+								m_arm.stop();
+								m_autoStep = 6;
+								autoCount = 0;
+							}
+							break;
+						// Back Up
+						case 6:
+			
+							autoCount++;
+							driveStraight(-0.5, 0);
+							if(autoCount > 75) {
+								m_elevator.setLevel(0);
+								m_autoStep = 7;
+								autoCount = 0;
+							}
+							break;
+						case 7:
+						break;
+						
+					
+				}	
 			}
 		}
-		
 	}
 	
 	public void disabledPeriodic() {
@@ -1026,6 +1167,12 @@ public class MainControlSystem extends TimedRobot {
 			}
 		}
 		
+		climbValue = m_joystick1.getRawAxis(2);
+		if(climbValue < 0.1) {
+			climbValue = 0;
+		}
+		m_climb.set(climbValue);
+		
 		//if(m_sensors.getDistance() > 0.8 && m_elevator.getLevel() == 0) {
 		//	m_elevator.setLevel(1);
 		//}
@@ -1045,7 +1192,12 @@ public class MainControlSystem extends TimedRobot {
 		SmartDashboard.putNumber("distance", m_encoders.getDistance());
 		SmartDashboard.putNumber("Pitch: ", m_ahrs.getPitch());
 		SmartDashboard.putNumber("DRIVE RPM: ", RPM);
-		
+		neo.fill(powerUp[(int)powerUpFrame], 0, 0);
+		powerUpFrame += 0.2;
+		if(powerUpFrame > 28){
+			powerUpFrame = 28;
+		}
+		neo.show();
 		m_vision.sendHat(m_joystick1);
 	}
 
@@ -1054,7 +1206,7 @@ public class MainControlSystem extends TimedRobot {
 		double cycles = 0;
 		double reset = 0;
 		double pulses_per_revolution = 0;
-		double toInches = 41.259408031924259196794170555305 ;//55.245648042746041975368465658798;
+		double toInches = 55.245648042746041975368465658798;
 		
 		public srxEncoders(int pulses, int channels) {
 			pulses_per_revolution = pulses*channels;
@@ -1062,17 +1214,17 @@ public class MainControlSystem extends TimedRobot {
 		}
 	
 		public void reset() {
-			m_r2.setSelectedSensorPosition(0, 0, 50);
-			m_l1.setSelectedSensorPosition(0, 0, 50);
+			m_r1.setSelectedSensorPosition(0, 0, 50);
+			m_l3.setSelectedSensorPosition(0, 0, 50);
 		}
 		
 		public double getDistance() {
-			cycles = (m_r2.getSelectedSensorPosition(0) + m_l1.getSelectedSensorPosition(0))/2;
+			cycles = (m_r1.getSelectedSensorPosition(0) + m_l3.getSelectedSensorPosition(0))/2;
 			return (cycles/toInches);
 		}
 		
 		public int getRaw() {
-			return (m_r2.getSelectedSensorPosition(0) + m_l1.getSelectedSensorPosition(0))/2;
+			return (m_r1.getSelectedSensorPosition(0) + m_l3.getSelectedSensorPosition(0))/2;
 		}
 	}	
 	
