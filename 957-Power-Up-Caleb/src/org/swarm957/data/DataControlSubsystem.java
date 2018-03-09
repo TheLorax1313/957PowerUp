@@ -88,6 +88,10 @@ public class DataControlSubsystem {
 			light.setDouble(1);
 		}
 	}
+	
+	public boolean inTele() {
+		return ds.isOperatorControl();
+	}
 }
 
 

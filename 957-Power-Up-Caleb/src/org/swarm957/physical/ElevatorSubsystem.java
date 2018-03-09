@@ -95,6 +95,10 @@ public class ElevatorSubsystem {
 		return liftLevel;
 	}
 	
+	public int getRaw() {
+		return elevator.getSelectedSensorPosition(0);
+	}
+	
 	public double percent() {
 		
 		if(currentLevel < 2) {
@@ -166,8 +170,7 @@ public class ElevatorSubsystem {
 				elevator.set(ControlMode.MotionMagic, targetPosition);
 				
 				// Reports the position of the elevator in encoder counts
-				SmartDashboard.putNumber("Elevator: ",elevator.getSelectedSensorPosition(0));
-				SmartDashboard.putNumber("Amp Usage", elevator.getOutputCurrent());
+				SmartDashboard.putNumber("Elevator Amp Usage", elevator.getOutputCurrent());
 
 				if(currentPos <= 1300) {
 					currentLevel = 0;

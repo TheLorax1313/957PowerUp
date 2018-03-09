@@ -35,11 +35,13 @@ public class MainControlSystem extends TimedRobot {
 	
 	// Start Gyro
 	AHRS m_ahrs = new AHRS(I2C.Port.kMXP);
-	
+	String alliance = "invalid";
 	double RPM = 0;
 	
 	// Begin Elevator control
 	ElevatorSubsystem m_elevator = new ElevatorSubsystem();
+	
+	int elevPos = 0;
 	
 	// Begin Arm control
 	ArmSubsystem m_arm = new ArmSubsystem(1);
@@ -47,7 +49,7 @@ public class MainControlSystem extends TimedRobot {
 	SensorSubsystem m_sensors = new SensorSubsystem();
 	
 	Thread m_rpm = new Thread(new calculateRPM());
-	
+	double breathe = 0;
 	int[] powerUp = {1,0,1,0,2,1,2,1,3,2,3,2,4,3,4,3,5,4,5,4,6,5,6,5,7,6,7,6,8};
 	double powerUpFrame = 0; 
 	
@@ -79,6 +81,8 @@ public class MainControlSystem extends TimedRobot {
 	// Climbing talon
 	WPI_TalonSRX m_climb = new WPI_TalonSRX(9);
 	double climbValue = 0;
+	boolean powerUpTriggered = false;
+	double wheelValue = 0;
 	
 	// Ran once on robot initalization
 	public void robotInit() {
@@ -127,6 +131,17 @@ public class MainControlSystem extends TimedRobot {
 		// Obtain Autonomus mode
 		m_autoMode = m_ethernet.autoMode();
 		
+		// Sets lights before going into Auto
+		for(int i = 0;i < 10;i++) {
+			neo.setPixel(i, 0, 8, 0);
+		}
+		for(int i = 10;i < 20;i++) {
+			neo.setPixel(i, 7, 7, 0);
+		}
+		for(int i = 20;i < 30;i++) {
+			neo.setPixel(i, 0, 8, 0);
+		}
+		neo.show();
 	}
 
 	// Autonomus
@@ -1122,7 +1137,32 @@ public class MainControlSystem extends TimedRobot {
 	}
 	
 	public void disabledPeriodic() {
-		//m_elevator.setLevel(0);
+
+		if(m_gameData.length == 3) {
+			if(alliance == "red") {
+				neo.fill(powerUp[(int)powerUpFrame], 0, 0);
+			}
+			if(alliance == "blue") {
+				neo.fill(0, 0, powerUp[(int)powerUpFrame]);
+			}
+			powerUpFrame += 0.3;
+			if(powerUpFrame > 28){
+				powerUpFrame = 28;
+			}
+		}else {
+
+			for(int i = 0; i < 30; i++) {
+				neo.setPixel(i,rWheel[(int) wheelValue+(i/2)],gWheel[(int) wheelValue+(i/2)],bWheel[(int) wheelValue+(i/2)]);
+			}
+			if(alliance == "red") {
+				neo.fill((int)generateWave(breathe)*4, 0, 0);
+			}
+			if(alliance == "blue") {
+				neo.fill(0, 0, (int)generateWave(breathe)*4);
+			}	
+		}
+		
+		neo.show();
 	}
 	
 	public void teleopInit() {
@@ -1192,13 +1232,11 @@ public class MainControlSystem extends TimedRobot {
 		SmartDashboard.putNumber("distance", m_encoders.getDistance());
 		SmartDashboard.putNumber("Pitch: ", m_ahrs.getPitch());
 		SmartDashboard.putNumber("DRIVE RPM: ", RPM);
-		neo.fill(powerUp[(int)powerUpFrame], 0, 0);
-		powerUpFrame += 0.2;
-		if(powerUpFrame > 28){
-			powerUpFrame = 28;
-		}
-		neo.show();
-		m_vision.sendHat(m_joystick1);
+		
+		alliance = m_ethernet.alliance();
+		breathe = breathe + 5;
+		wheelValue = wheelValue + 1;
+		m_vision.sendHat(m_joystick0);
 	}
 
 	// Class to manage Talon encoder feedback
@@ -1271,6 +1309,7 @@ public class MainControlSystem extends TimedRobot {
 			while(true) {
 				m_gameData = m_ethernet.switchLocation();
 				SmartDashboard.putString("Game Data", m_gameData.toString());
+				
 			}
 		}
 	}
@@ -1292,5 +1331,45 @@ public class MainControlSystem extends TimedRobot {
 		
 		
 	}
+	
+	public double generateWave(double x) {
+		
+		return Math.sin(x*(Math.PI/180))+1;
+	}
+	
+	public class teleLight implements Runnable{
+		
+		public void run() {
+			
+			while(true) {
+				
+				if(m_ethernet.inTele()) {
+					if(alliance =="red") {
+						neo.fill(8, 0, 0);
+					}
+					if(alliance == "blue") {
+						neo.fill(8, 0, 0);
+					}
+					
+					elevPos = Math.round((m_elevator.getRaw()/28250)*30);
+					for(int i = elevPos-5;i < elevPos + 5;i++) {
+						neo.setPixel(i, 7, 7, 0);
+					}
+					
+					neo.show();
+				}
+				
+				
+				try {Thread.sleep(20);} catch (InterruptedException e) {
+				}
+			}
+			
+		}
+		
+	}
+
+	static byte[] rWheel = {8,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8};
+	static byte[] gWheel = {0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+	static byte[] bWheel = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1};
 
 }
