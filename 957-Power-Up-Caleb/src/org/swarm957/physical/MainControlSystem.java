@@ -27,9 +27,6 @@ public class MainControlSystem extends TimedRobot {
 	// Start Vision Tracking
 	VisionSubsystem m_vision = new VisionSubsystem();
 	
-	// Begin Arduino Communication
-	UDP_NeoStrip neo = new UDP_NeoStrip(30, "Side Strips", new byte[] {10,9,57,6});
-	
 	// Enable Encoder tracking
 	srxEncoders m_encoders = new srxEncoders(256,2);
 	
@@ -40,18 +37,9 @@ public class MainControlSystem extends TimedRobot {
 	
 	// Begin Elevator control
 	ElevatorSubsystem m_elevator = new ElevatorSubsystem();
-	
 	int elevPos = 0;
-	
 	// Begin Arm control
 	ArmSubsystem m_arm = new ArmSubsystem(1);
-	
-	SensorSubsystem m_sensors = new SensorSubsystem();
-	
-	Thread m_rpm = new Thread(new calculateRPM());
-	double breathe = 0;
-	int[] powerUp = {1,0,1,0,2,1,2,1,3,2,3,2,4,3,4,3,5,4,5,4,6,5,6,5,7,6,7,6,8};
-	double powerUpFrame = 0; 
 	
 	// Drive-train Initialization
 	WPI_TalonSRX m_r1 = new WPI_TalonSRX(0);	// Talons
@@ -68,13 +56,15 @@ public class MainControlSystem extends TimedRobot {
 	Joystick m_joystick0 = new Joystick(0);	// Left/Single joystick
 	Joystick m_joystick1 = new Joystick(1);	// Right joystick
 	
-	Thread m_updateAuto = new Thread(new obtainAutoData());
+
 	// Autonomus Switch Statement stage
 	int m_autoStep = 0;
 	int autoCount = 0;
+	
 	// String to hold the Auto mode
 	int m_autoMode = 0;
 	double speed = 0;
+	
 	// Character array to hold switch/scale locations
 	char[] m_gameData = new char[3];
 	
@@ -83,6 +73,9 @@ public class MainControlSystem extends TimedRobot {
 	double climbValue = 0;
 	boolean powerUpTriggered = false;
 	double wheelValue = 0;
+	
+	double encoderOffset = 0;
+	int runs = 0;
 	
 	// Ran once on robot initalization
 	public void robotInit() {
@@ -107,17 +100,21 @@ public class MainControlSystem extends TimedRobot {
 		setCurrentLimits(m_l2,13,15,50);
 		setCurrentLimits(m_l3,13,15,50);
 		*/
-		
-		m_updateAuto.setDaemon(true);
-		m_updateAuto.start();
-		m_rpm.setDaemon(true);
-		m_rpm.start();
+
+
 
 	}
 
+	public void disabledPeriodic() {
+		m_elevator.disabled();
+	}
+	public void teleopInit() {
+		m_elevator.disabled();
+	}
+	
 	// Resets values to prepare for Auto
 	public void autonomousInit() {
-		
+		m_elevator.disabled();
 		// Reset Auto stage counter
 		m_autoStep = 0;	
 		
@@ -130,18 +127,8 @@ public class MainControlSystem extends TimedRobot {
 		
 		// Obtain Autonomus mode
 		m_autoMode = m_ethernet.autoMode();
+		m_gameData = m_ethernet.switchLocation();
 		
-		// Sets lights before going into Auto
-		for(int i = 0;i < 10;i++) {
-			neo.setPixel(i, 0, 8, 0);
-		}
-		for(int i = 10;i < 20;i++) {
-			neo.setPixel(i, 7, 7, 0);
-		}
-		for(int i = 20;i < 30;i++) {
-			neo.setPixel(i, 0, 8, 0);
-		}
-		neo.show();
 	}
 
 	// Autonomus
@@ -1135,48 +1122,12 @@ public class MainControlSystem extends TimedRobot {
 			}
 		}
 	}
-	
-	public void disabledPeriodic() {
-
-		if(m_gameData.length == 3) {
-			if(alliance == "red") {
-				neo.fill(powerUp[(int)powerUpFrame], 0, 0);
-			}
-			if(alliance == "blue") {
-				neo.fill(0, 0, powerUp[(int)powerUpFrame]);
-			}
-			powerUpFrame += 0.3;
-			if(powerUpFrame > 28){
-				powerUpFrame = 28;
-			}
-		}else {
-
-			for(int i = 0; i < 30; i++) {
-				neo.setPixel(i,rWheel[(int) wheelValue+(i/2)],gWheel[(int) wheelValue+(i/2)],bWheel[(int) wheelValue+(i/2)]);
-			}
-			if(alliance == "red") {
-				neo.fill((int)generateWave(breathe)*4, 0, 0);
-			}
-			if(alliance == "blue") {
-				neo.fill(0, 0, (int)generateWave(breathe)*4);
-			}	
-		}
-		
-		neo.show();
-	}
-	
-	public void teleopInit() {
-		//m_elevator.setLevel(0);
-	}
 
 	// Code ran during the driver-operated period of the Match.
 	public void teleopPeriodic() {
-		// Drive
-		//if(m_ethernet.driveType() == 1) {
-		//	m_drive.tankDrive(-m_joystick0.getRawAxis(1), m_joystick1.getRawAxis(1));
-		//}else {
-			m_drive.arcadeDrive(-m_joystick0.getRawAxis(1)*m_elevator.percent(), m_joystick0.getRawAxis(2)*m_elevator.returnTurn());
-		//}
+
+		m_drive.arcadeDrive(-m_joystick0.getRawAxis(1)*m_elevator.percent(), m_joystick0.getRawAxis(2)*m_elevator.returnTurn());
+
 		
 		if(m_joystick1.getRawButton(5)) {
 			m_elevator.setLevel(0);
@@ -1206,37 +1157,27 @@ public class MainControlSystem extends TimedRobot {
 				m_arm.stop();
 			}
 		}
-		
-		climbValue = m_joystick1.getRawAxis(2);
-		if(climbValue < 0.1) {
-			climbValue = 0;
-		}
-		m_climb.set(climbValue);
-		
-		//if(m_sensors.getDistance() > 0.8 && m_elevator.getLevel() == 0) {
-		//	m_elevator.setLevel(1);
-		//}
-		
-		
-	
 	}
 	
 	// Method for controlling LED Lights (5v) and Dashboard
 	// readings.
 	public void robotPeriodic(){
-
+		runs++;
 		SmartDashboard.putNumber("Angle", m_ahrs.getYaw());     
 		SmartDashboard.putNumber("Auto Step", m_autoStep);
-		SmartDashboard.putNumber("voltage", m_sensors.getDistance());
 		SmartDashboard.putBoolean("lowSwitch", m_elevator.get());
 		SmartDashboard.putNumber("distance", m_encoders.getDistance());
 		SmartDashboard.putNumber("Pitch: ", m_ahrs.getPitch());
 		SmartDashboard.putNumber("DRIVE RPM: ", RPM);
-		
 		alliance = m_ethernet.alliance();
-		breathe = breathe + 5;
-		wheelValue = wheelValue + 1;
 		m_vision.sendHat(m_joystick0);
+		
+		if(runs > 4) {
+			RPM = (Math.abs(m_encoders.getRaw()-encoderOffset)/1024)*600;
+			runs = 0;
+			encoderOffset = m_encoders.getRaw();
+		}
+		
 	}
 
 	// Class to manage Talon encoder feedback
@@ -1303,73 +1244,4 @@ public class MainControlSystem extends TimedRobot {
 		talon.configPeakCurrentDuration(maxSpikeTime, 20);
 		talon.enableCurrentLimit(true);
 	}
-	
-	public class obtainAutoData implements Runnable{
-		public void run() {
-			while(true) {
-				m_gameData = m_ethernet.switchLocation();
-				SmartDashboard.putString("Game Data", m_gameData.toString());
-				
-			}
-		}
-	}
-	
-	public class calculateRPM implements Runnable{
-		
-		double encoderOffset = 0;
-		
-		public void run() {
-			while(true) {
-				encoderOffset = m_encoders.getRaw();
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {}
-				RPM = (Math.abs(m_encoders.getRaw()-encoderOffset)/1024)*600;
-				
-			}
-		}
-		
-		
-	}
-	
-	public double generateWave(double x) {
-		
-		return Math.sin(x*(Math.PI/180))+1;
-	}
-	
-	public class teleLight implements Runnable{
-		
-		public void run() {
-			
-			while(true) {
-				
-				if(m_ethernet.inTele()) {
-					if(alliance =="red") {
-						neo.fill(8, 0, 0);
-					}
-					if(alliance == "blue") {
-						neo.fill(8, 0, 0);
-					}
-					
-					elevPos = Math.round((m_elevator.getRaw()/28250)*30);
-					for(int i = elevPos-5;i < elevPos + 5;i++) {
-						neo.setPixel(i, 7, 7, 0);
-					}
-					
-					neo.show();
-				}
-				
-				
-				try {Thread.sleep(20);} catch (InterruptedException e) {
-				}
-			}
-			
-		}
-		
-	}
-
-	static byte[] rWheel = {8,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8};
-	static byte[] gWheel = {0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-	static byte[] bWheel = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,7,6,5,4,3,2,1};
-
 }

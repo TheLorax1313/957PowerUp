@@ -20,8 +20,6 @@ public class ElevatorSubsystem {
 	DigitalInput lowSwitch = new DigitalInput(0);
 	DigitalInput highSwitch = new DigitalInput(1);
 	
-	Thread liftControl = new Thread(new elevatorControl());
-	
 	// Timeout for all Talon SRX functions
 	public int globalTimeOut = 20;
 	
@@ -41,8 +39,7 @@ public class ElevatorSubsystem {
 	
 	// Boolean to check if we have hit a limit switch and encoder
 	// position is in the direction of the limit switch
-	boolean hitSwitch = false;
-	
+	boolean switchTouched = false;
 	public ElevatorSubsystem() {
 		
 		// Configure Amperage draw limits
@@ -77,30 +74,68 @@ public class ElevatorSubsystem {
 
 		// Reset the encoder to 0
 		elevator.setSelectedSensorPosition(0, 0, globalTimeOut);
-		
-		// Begin thread controlling the lift mechanism
-		liftControl.setDaemon(true);
-		liftControl.start();
-	
 	}
 	
-	public void setLevel(int level) {
-		// Sets the target position to the selected index of lift position array
+	// Sets the target position to the selected index of lift position array
+	// Will not run if the lift has not hit the low limit switch
+	public void setLevel(int level) {	
+		// Sets the target position of the lift along with the current level of
+		// the lift
 		targetPosition = liftPositions[level];
 		liftLevel = level;
+		
+		// Checks if the lift is at the low point
+		// This is reset in disabled, so it will continue to run
+		if(!lowSwitch.get()) {
+			switchTouched = true;
+		}
+		
+		// If we can move, do so
+		if(switchTouched) {
+			elevator.set(ControlMode.PercentOutput, targetPosition);
+		}else {
+			// Else, do not move
+			elevator.set(ControlMode.PercentOutput, 0);
+		}
 	}
 	
-	public int getLevel() {
-		// Returns the target level of the lift
+	// Returns the target level of the lift
+	public int getLevel() {	
 		return liftLevel;
 	}
 	
+	// Returns the raw encoder value
 	public int getRaw() {
 		return elevator.getSelectedSensorPosition(0);
 	}
 	
+	/** Returns the percentage modifier used by drive code
+	 *  when extended
+	 *  Prevents tipping due to high speed
+	 */
 	public double percent() {
-		
+		currentPos = elevator.getSelectedSensorPosition(0);
+		if(currentPos <= 1300) {
+			currentLevel = 0;
+		}
+		if(currentPos > 1300 && currentPos <= 1800) {
+			currentLevel = 1;
+		}
+		if(currentPos > 1800 && currentPos <= 10500) {
+			currentLevel = 2;
+		}
+		if(currentPos > 10500 && currentPos <= 20500) {
+			currentLevel = 3;
+		}
+		if(currentPos > 20500 && currentPos <= 26000) {
+			currentLevel = 4;
+		}
+		if(currentPos > 26000 && currentPos <= 26000) {
+			currentLevel = 5;
+		}
+		if(currentPos > 20500 && currentPos <= 26000) {
+			currentLevel = 6;
+		}
 		if(currentLevel < 2) {
 			return 1;
 		}
@@ -110,8 +145,33 @@ public class ElevatorSubsystem {
 		return 0.5;
 	}
 	
+	/** Returns the percentage modifier used by drive code
+	 *  when extended
+	 *  Prevents tipping due to high speed
+	 */
 	public double returnTurn() {
-		
+		currentPos = elevator.getSelectedSensorPosition(0);
+		if(currentPos <= 1300) {
+			currentLevel = 0;
+		}
+		if(currentPos > 1300 && currentPos <= 1800) {
+			currentLevel = 1;
+		}
+		if(currentPos > 1800 && currentPos <= 10500) {
+			currentLevel = 2;
+		}
+		if(currentPos > 10500 && currentPos <= 20500) {
+			currentLevel = 3;
+		}
+		if(currentPos > 20500 && currentPos <= 26000) {
+			currentLevel = 4;
+		}
+		if(currentPos > 26000 && currentPos <= 26000) {
+			currentLevel = 5;
+		}
+		if(currentPos > 20500 && currentPos <= 26000) {
+			currentLevel = 6;
+		}
 		if(currentLevel < 2) {
 			return 0.75;
 		}
@@ -121,87 +181,19 @@ public class ElevatorSubsystem {
 		return 0.5;
 	}
 	
-	
+	/** Runs during disabled and when initalizing Auto or Teleop
+	 *  Sends the Talon information to not move, sets if the bottom switch is touched to false
+	 *  
+	 *  WHY IS IT HERE:
+	 *  This is to prevent the lift from starting at max speed due to a Talon glitch
+	 */
+	public void disabled() {
+		switchTouched = false;
+		elevator.set(ControlMode.PercentOutput, 0);
+	}
 	
 	public boolean get() {
 		return lowSwitch.get();
 	}
-	
-	public class elevatorControl implements Runnable {
-
-		public void run() {
-			while(true) {
-				
-				if(ds.isDisabled()) {
-					while((ds.isDisabled()) || (!lowSwitch.get())||(!lowSwitch.get() && ds.isEnabled())) {
-						elevator.set(ControlMode.PercentOutput, 0);
-						SmartDashboard.putBoolean("Able to move", false);
-					}
-					try {
-						Thread.sleep(1);
-					} catch (Exception e) {}
-					targetPosition = liftPositions[0];
-					liftLevel = 0;
-					elevator.setSelectedSensorPosition(0, 0, 20);
-				}
-				SmartDashboard.putBoolean("Able to move", true);
-				// Gets the current encoder position
-				currentPos = elevator.getSelectedSensorPosition(0);
-
-				// If the current position is higher than the target position and the low switch is pressed OR
-				// the current position is lower than the target position and the high switch is pressed:
-				if((currentPos > targetPosition && lowSwitch.get()) || currentPos < targetPosition && highSwitch.get()) {
-					
-					// Check if the switch has been hit once (set later)
-					if(hitSwitch = false) {
-						// Sets the target position to the current position (RAN ONCE!!!!!)
-						targetPosition = currentPos;
-					}
-					
-					 //Tells the program that the switch has been hit
-					hitSwitch = true;
-				}else {
-					
-					//Tells the program that the witch is not hit
-					hitSwitch = false;
-				}
-				
-				// Sets the elevator position based on MotionMagic values (TALON SRX)
-				elevator.set(ControlMode.MotionMagic, targetPosition);
-				
-				// Reports the position of the elevator in encoder counts
-				SmartDashboard.putNumber("Elevator Amp Usage", elevator.getOutputCurrent());
-
-				if(currentPos <= 1300) {
-					currentLevel = 0;
-				}
-				if(currentPos > 1300 && currentPos <= 1800) {
-					currentLevel = 1;
-				}
-				if(currentPos > 1800 && currentPos <= 10500) {
-					currentLevel = 2;
-				}
-				if(currentPos > 10500 && currentPos <= 20500) {
-					currentLevel = 3;
-				}
-				if(currentPos > 20500 && currentPos <= 26000) {
-					currentLevel = 4;
-				}
-				if(currentPos > 26000 && currentPos <= 26000) {
-					currentLevel = 5;
-				}
-				if(currentPos > 20500 && currentPos <= 26000) {
-					currentLevel = 6;
-				}
-				
-				
-				try {
-					Thread.sleep(10);
-				} catch (Exception e) {}
-			}
-		}
-	}
-	
-	
 }
 
