@@ -86,13 +86,15 @@ public class ElevatorSubsystem {
 		
 		// Checks if the lift is at the low point
 		// This is reset in disabled, so it will continue to run
-		if(!lowSwitch.get()) {
+		if(lowSwitch.get()) {
 			switchTouched = true;
+			SmartDashboard.putBoolean("low switch",switchTouched);
 		}
-		
+
 		// If we can move, do so
 		if(switchTouched) {
-			elevator.set(ControlMode.PercentOutput, targetPosition);
+			System.out.println("set level");
+			elevator.set(ControlMode.MotionMagic, liftPositions[level]);
 		}else {
 			// Else, do not move
 			elevator.set(ControlMode.PercentOutput, 0);

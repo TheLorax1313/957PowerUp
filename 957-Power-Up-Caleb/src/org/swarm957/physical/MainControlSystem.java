@@ -1163,14 +1163,8 @@ public class MainControlSystem extends TimedRobot {
 	// readings.
 	public void robotPeriodic(){
 		runs++;
-		SmartDashboard.putNumber("Angle", m_ahrs.getYaw());     
-		SmartDashboard.putNumber("Auto Step", m_autoStep);
-		SmartDashboard.putBoolean("lowSwitch", m_elevator.get());
-		SmartDashboard.putNumber("distance", m_encoders.getDistance());
-		SmartDashboard.putNumber("Pitch: ", m_ahrs.getPitch());
-		SmartDashboard.putNumber("DRIVE RPM: ", RPM);
-		alliance = m_ethernet.alliance();
-		m_vision.sendHat(m_joystick0);
+		//alliance = m_ethernet.alliance();
+		//m_vision.sendHat(m_joystick0);
 		
 		if(runs > 4) {
 			RPM = (Math.abs(m_encoders.getRaw()-encoderOffset)/1024)*600;
