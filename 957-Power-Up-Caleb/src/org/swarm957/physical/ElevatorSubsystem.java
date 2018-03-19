@@ -12,21 +12,19 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class ElevatorSubsystem {
 
+	// Enumerator for lift levels
+	public enum liftLevels {GROUND, EXCHANGE, PORTAL, SWITCH, SCALELOW, SCALEMID, SCALEHIGH;}
+	
+	// Lift Positions for the above levels
+	int[] liftPositions = {30,1724,9900,10400,20000,24236,28250};
+	
 	// Elevator Talon
 	TalonSRX elevator = new TalonSRX(6);
 	DriverStation ds = DriverStation.getInstance();
 	
-	// Limit Switches (ROBO RIO DIO!)
-	DigitalInput lowSwitch = new DigitalInput(0);
-	DigitalInput highSwitch = new DigitalInput(1);
-	
 	// Timeout for all Talon SRX functions
 	public int globalTimeOut = 20;
-	
-	// Lift Positions (Rounded):
-	// Ground, Exchange, Switch, Scale Low, Scale Medium, Scale High
-	int[] liftPositions = {30,1724,10400,20000,24236,28250};
-	
+
 	// Position Motion Magic homes towards
 	int targetPosition = 0;
 	
@@ -36,10 +34,7 @@ public class ElevatorSubsystem {
 	// Stores current lift level
 	int liftLevel = 0;
 	int currentLevel = 0;
-	
-	// Boolean to check if we have hit a limit switch and encoder
-	// position is in the direction of the limit switch
-	boolean switchTouched = false;
+
 	public ElevatorSubsystem() {
 		
 		// Configure Amperage draw limits
@@ -78,27 +73,14 @@ public class ElevatorSubsystem {
 	
 	// Sets the target position to the selected index of lift position array
 	// Will not run if the lift has not hit the low limit switch
-	public void setLevel(int level) {	
+	public void setLevel(liftLevels level) {	
 		// Sets the target position of the lift along with the current level of
 		// the lift
-		targetPosition = liftPositions[level];
-		liftLevel = level;
-		
-		// Checks if the lift is at the low point
-		// This is reset in disabled, so it will continue to run
-		if(lowSwitch.get()) {
-			switchTouched = true;
-			SmartDashboard.putBoolean("low switch",switchTouched);
-		}
+		targetPosition = liftPositions[level.ordinal()];
+		liftLevel = level.ordinal();
 
-		// If we can move, do so
-		if(switchTouched) {
-			System.out.println("set level");
-			elevator.set(ControlMode.MotionMagic, liftPositions[level]);
-		}else {
-			// Else, do not move
-			elevator.set(ControlMode.PercentOutput, 0);
-		}
+		elevator.set(ControlMode.MotionMagic, liftPositions[level.ordinal()]);
+
 	}
 	
 	// Returns the target level of the lift
@@ -118,25 +100,25 @@ public class ElevatorSubsystem {
 	public double percent() {
 		currentPos = elevator.getSelectedSensorPosition(0);
 		if(currentPos <= 1300) {
-			currentLevel = 0;
+			return 1;
 		}
 		if(currentPos > 1300 && currentPos <= 1800) {
-			currentLevel = 1;
+			return 1;
 		}
 		if(currentPos > 1800 && currentPos <= 10500) {
-			currentLevel = 2;
+			return 1;
 		}
 		if(currentPos > 10500 && currentPos <= 20500) {
-			currentLevel = 3;
+			return 0.65;
 		}
 		if(currentPos > 20500 && currentPos <= 26000) {
-			currentLevel = 4;
+			return 0.65;
 		}
 		if(currentPos > 26000 && currentPos <= 26000) {
-			currentLevel = 5;
+			return 0.5;
 		}
 		if(currentPos > 20500 && currentPos <= 26000) {
-			currentLevel = 6;
+			return 0.5;
 		}
 		if(currentLevel < 2) {
 			return 1;
@@ -182,20 +164,10 @@ public class ElevatorSubsystem {
 		}
 		return 0.5;
 	}
-	
-	/** Runs during disabled and when initalizing Auto or Teleop
-	 *  Sends the Talon information to not move, sets if the bottom switch is touched to false
-	 *  
-	 *  WHY IS IT HERE:
-	 *  This is to prevent the lift from starting at max speed due to a Talon glitch
-	 */
+
 	public void disabled() {
-		switchTouched = false;
 		elevator.set(ControlMode.PercentOutput, 0);
 	}
-	
-	public boolean get() {
-		return lowSwitch.get();
-	}
+
 }
 
