@@ -1,14 +1,9 @@
 package org.swarm957.physical;
 
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.FeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class ElevatorSubsystem {
 
@@ -16,7 +11,7 @@ public class ElevatorSubsystem {
 	public enum liftLevels {GROUND, EXCHANGE, PORTAL, SWITCH, SCALELOW, SCALEMID, SCALEHIGH;}
 	
 	// Lift Positions for the above levels
-	int[] liftPositions = {30,1724,9900,10400,20000,24236,28250};
+	int[] liftPositions = {30,1724,5750,10400,20000,24236,28250};
 	
 	// Elevator Talon
 	TalonSRX elevator = new TalonSRX(6);
@@ -43,9 +38,7 @@ public class ElevatorSubsystem {
 		elevator.configPeakCurrentDuration(10, globalTimeOut);
 		elevator.configContinuousCurrentLimit(25, globalTimeOut);
 		elevator.enableCurrentLimit(true);
-		
-		// Switch to PID slot 0
-		
+
 		// Configure our Versa Planetary encoder
 		elevator.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, globalTimeOut);
 		
@@ -163,6 +156,10 @@ public class ElevatorSubsystem {
 			return 0.6;
 		}
 		return 0.5;
+	}
+	
+	public void controlGranularly(liftLevels lowbound, liftLevels highbound, double percentFromLow) {
+		elevator.set(ControlMode.MotionMagic, liftPositions[lowbound.ordinal()] + ((liftPositions[highbound.ordinal()]-liftPositions[lowbound.ordinal()])*percentFromLow));
 	}
 
 	public void disabled() {
